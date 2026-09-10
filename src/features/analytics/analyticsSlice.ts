@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { DailyReview } from "./types";
+import type { DailyReview } from "@/redux/types";
 
 interface State {
   reviews: DailyReview[];
@@ -18,8 +18,11 @@ const slice = createSlice({
     hydrateAnalytics(state, a: PayloadAction<DailyReview[]>) {
       if (a.payload) state.reviews = a.payload;
     },
+    removeReviewLocal(state, a: PayloadAction<string>) {
+      state.reviews = state.reviews.filter((r) => r.date !== a.payload);
+    },
   },
 });
 
-export const { saveReview, hydrateAnalytics } = slice.actions;
+export const { saveReview, hydrateAnalytics, removeReviewLocal } = slice.actions;
 export default slice.reducer;

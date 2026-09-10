@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, nanoid } from "@reduxjs/toolkit";
-import type { MonthlyGoal } from "./types";
+import type { MonthlyGoal } from "@/redux/types";
 
 interface State {
   monthlyGoals: MonthlyGoal[];
@@ -42,6 +42,11 @@ const slice = createSlice({
     hydratePlanning(_state, a: PayloadAction<Partial<State>>) {
       return { ..._state, ...a.payload };
     },
+    setGoalLocal(state, a: PayloadAction<MonthlyGoal>) {
+      const i = state.monthlyGoals.findIndex((g) => g.id === a.payload.id);
+      if (i >= 0) state.monthlyGoals[i] = a.payload;
+      else state.monthlyGoals.push(a.payload);
+    },
   },
 });
 
@@ -51,5 +56,6 @@ export const {
   deleteMonthlyGoal,
   setWeeklyGoal,
   hydratePlanning,
+  setGoalLocal,
 } = slice.actions;
 export default slice.reducer;

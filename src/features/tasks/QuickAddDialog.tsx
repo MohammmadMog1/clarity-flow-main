@@ -1,13 +1,16 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { closeQuickAdd } from "@/redux/uiSlice";
-import { addTask } from "@/redux/tasksSlice";
+import { addTask } from "./tasksSlice";
 import type { Difficulty, Priority } from "@/redux/types";
+import { todayKey } from "@/lib/date";
 
 export function QuickAddDialog() {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const { quickAddOpen, quickAddCategoryId } = useAppSelector((s) => s.ui);
   const categories = useAppSelector((s) => s.categories.items);
 
@@ -45,7 +48,7 @@ export function QuickAddDialog() {
         difficulty,
         estimatedMinutes,
         dueDate: dueDate || undefined,
-        plannedDate: planToday ? new Date().toISOString().slice(0, 10) : undefined,
+        plannedDate: planToday ? todayKey() : undefined,
       }),
     );
     dispatch(closeQuickAdd());
@@ -71,7 +74,7 @@ export function QuickAddDialog() {
             className="w-full max-w-lg rounded-2xl bg-card border border-border shadow-card p-6 space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">New task</h3>
+              <h3 className="text-lg font-semibold">{t("task.new")}</h3>
               <button
                 type="button"
                 onClick={() => dispatch(closeQuickAdd())}
@@ -85,19 +88,19 @@ export function QuickAddDialog() {
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="What needs to be done?"
+              placeholder={t("task.whatNeeds")}
               className="w-full px-4 py-3 rounded-xl bg-muted/50 outline-none focus:bg-background focus:ring-2 ring-ring text-sm"
             />
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a description (optional)…"
+              placeholder={t("task.description")}
               rows={2}
               className="w-full px-4 py-2.5 rounded-xl bg-muted/50 outline-none focus:bg-background focus:ring-2 ring-ring text-sm resize-none"
             />
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Category">
+              <Field label={t("task.category")}>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
@@ -110,30 +113,30 @@ export function QuickAddDialog() {
                   ))}
                 </select>
               </Field>
-              <Field label="Priority">
+              <Field label={t("task.priority")}>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as Priority)}
                   className="select"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
+                  <option value="low">{t("task.priority_low")}</option>
+                  <option value="medium">{t("task.priority_medium")}</option>
+                  <option value="high">{t("task.priority_high")}</option>
+                  <option value="urgent">{t("task.priority_urgent")}</option>
                 </select>
               </Field>
-              <Field label="Difficulty">
+              <Field label={t("task.difficulty")}>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value as Difficulty)}
                   className="select"
                 >
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
+                  <option value="easy">{t("task.difficulty_easy")}</option>
+                  <option value="medium">{t("task.difficulty_medium")}</option>
+                  <option value="hard">{t("task.difficulty_hard")}</option>
                 </select>
               </Field>
-              <Field label="Estimate (min)">
+              <Field label={t("task.estimate")}>
                 <input
                   type="number"
                   min={5}
@@ -143,7 +146,7 @@ export function QuickAddDialog() {
                   className="select"
                 />
               </Field>
-              <Field label="Due date">
+              <Field label={t("task.dueDate")}>
                 <input
                   type="date"
                   value={dueDate}
@@ -158,7 +161,7 @@ export function QuickAddDialog() {
                   onChange={(e) => setPlanToday(e.target.checked)}
                   className="rounded"
                 />
-                Plan for today
+                {t("task.planForToday")}
               </label>
             </div>
 
@@ -168,13 +171,13 @@ export function QuickAddDialog() {
                 onClick={() => dispatch(closeQuickAdd())}
                 className="px-4 py-2 rounded-xl text-sm hover:bg-muted"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 rounded-xl text-sm font-medium gradient-primary text-primary-foreground shadow-soft hover:shadow-glow transition-shadow"
               >
-                Add task
+                {t("brain.addTask")}
               </button>
             </div>
 

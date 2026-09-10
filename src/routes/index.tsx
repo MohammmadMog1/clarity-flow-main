@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, MoreHorizontal, Sparkles, Trash2 } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { selectFilteredTasks, categoryStats } from "@/redux/selectors";
-import { addCategory, deleteCategory } from "@/redux/categoriesSlice";
+import { addCategory, deleteCategory, updateCategory } from "@/features/categories/categoriesSlice";
 import { openQuickAdd } from "@/redux/uiSlice";
-import { TaskCard } from "@/components/TaskCard";
+import { TaskCard } from "@/features/tasks/TaskCard";
 import { ProgressRing } from "@/components/Progress";
 import { DynamicIcon } from "@/components/DynamicIcon";
-import { nanoid } from "@reduxjs/toolkit";
+import type { Category } from "@/redux/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,11 +18,9 @@ export const Route = createFileRoute("/")({
       { title: "Brain Dump — Clarity" },
       {
         name: "description",
-        content:
-          "Empty your mind. Organize tasks across categories with progress and focus tracking.",
+        content: "Drop every task in here first. Sort it into categories once it's out.",
       },
       { property: "og:title", content: "Brain Dump — Clarity" },
-      { property: "og:description", content: "Empty your mind. Organize tasks across categories." },
     ],
   }),
   component: BrainDumpPage,
@@ -61,16 +59,12 @@ function BrainDumpPage() {
     <div className="space-y-8 max-w-[1600px] mx-auto">
       <Hero progress={overallProgress} total={tasks.length} done={totalCompleted} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         {categories.map((c, i) => (
           <CategoryColumn key={c.id} category={c} index={i} />
         ))}
         <NewCategoryCard
-          onCreate={(name, color, icon) =>
-            dispatch(
-              addCategory({ id: nanoid(), name, color, icon, createdAt: new Date().toISOString() }),
-            )
-          }
+          onCreate={(name, color, icon) => dispatch(addCategory({ name, color, icon }))}
         />
       </div>
     </div>
@@ -102,17 +96,15 @@ function Hero({ progress, total, done }: { progress: number; total: number; done
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl p-7 md:p-9 glass shadow-card"
+      className="rounded-3xl p-7 md:p-9 border border-border bg-card shadow-card"
     >
-      <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full gradient-primary opacity-20 blur-3xl" />
-      <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-info/30 blur-3xl" />
-      <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-            <Sparkles className="h-3 w-3" /> {mounted ? dateLabel : "\u00A0"}
+            {mounted ? dateLabel : " "}
           </div>
           <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight">
-            {mounted ? greeting : "\u00A0"}.{" "}
+            {mounted ? greeting : " "}.{" "}
             <span className="text-gradient">{t("brain.emptyMind")}</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-lg">{t("brain.subtitle")}</p>
@@ -136,7 +128,7 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   );
 }
 
-function CategoryColumn({ category, index }: { category: any; index: number }) {
+function CategoryColumn({ category, index }: { category: Category; index: number }) {
   const tasks = useAppSelector(selectFilteredTasks).filter((t) => t.categoryId === category.id);
   const stats = categoryStats(
     useAppSelector((s) => s.tasks.items),
@@ -144,6 +136,7 @@ function CategoryColumn({ category, index }: { category: any; index: number }) {
   );
   const dispatch = useAppDispatch();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const { t } = useTranslation();
 
   return (
@@ -151,11 +144,11 @@ function CategoryColumn({ category, index }: { category: any; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      className="rounded-3xl glass shadow-soft p-4 flex flex-col min-h-[320px]"
+      className="rounded-3xl border border-border bg-card shadow-soft p-4 flex flex-col min-h-72 sm:min-h-80"
     >
-      <header className="flex items-center gap-3 px-1.5 pb-3 border-b border-border/60">
+      <header className="flex items-center gap-3 px-1.5 pb-3 border-b border-border">
         <div
-          className="h-10 w-10 rounded-xl grid place-items-center text-white shadow-soft"
+          className="h-10 w-10 rounded-xl grid place-items-center text-white shadow-soft shrink-0"
           style={{ background: category.color }}
         >
           <DynamicIcon name={category.icon} className="h-5 w-5" />
@@ -176,9 +169,18 @@ function CategoryColumn({ category, index }: { category: any; index: number }) {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-1 w-40 bg-popover border border-border rounded-xl shadow-card py-1 z-10"
+                    className="absolute end-0 top-full mt-1 w-44 bg-popover border border-border rounded-xl shadow-card py-1 z-10"
                     onMouseLeave={() => setMenuOpen(false)}
                   >
+                    <button
+                      onClick={() => {
+                        setEditing(true);
+                        setMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-start text-xs hover:bg-muted flex items-center gap-2"
+                    >
+                      <Pencil className="h-3 w-3" /> {t("brain.editCategory")}
+                    </button>
                     <button
                       onClick={() => {
                         dispatch(deleteCategory(category.id));
@@ -204,7 +206,18 @@ function CategoryColumn({ category, index }: { category: any; index: number }) {
         <ProgressRing value={stats.progress} size={42} stroke={4} color={category.color} />
       </header>
 
-      <div className="space-y-2 mt-3 flex-1 scrollbar-thin overflow-y-auto pr-1 max-h-[460px]">
+      {editing && (
+        <CategoryEditor
+          category={category}
+          onCancel={() => setEditing(false)}
+          onSave={(patch) => {
+            dispatch(updateCategory({ ...category, ...patch }));
+            setEditing(false);
+          }}
+        />
+      )}
+
+      <div className="space-y-2 mt-3 flex-1 scrollbar-thin overflow-y-auto pr-1 max-h-[28rem]">
         <AnimatePresence>
           {tasks.map((t) => (
             <TaskCard key={t.id} task={t} accentColor={category.color} />
@@ -227,6 +240,76 @@ function CategoryColumn({ category, index }: { category: any; index: number }) {
   );
 }
 
+function CategoryEditor({
+  category,
+  onSave,
+  onCancel,
+}: {
+  category: Category;
+  onSave: (patch: { name: string; color: string; icon: string }) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(category.name);
+  const [color, setColor] = useState(category.color);
+  const [icon, setIcon] = useState(category.icon);
+  const { t } = useTranslation();
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (name.trim()) onSave({ name: name.trim(), color, icon });
+      }}
+      className="mt-3 space-y-2.5 rounded-xl bg-muted/40 p-3"
+    >
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="w-full px-3 py-1.5 rounded-lg bg-card border border-border outline-none focus:ring-2 ring-ring text-sm"
+      />
+      <div className="flex flex-wrap gap-1.5">
+        {COLORS.map((c) => (
+          <button
+            type="button"
+            key={c}
+            onClick={() => setColor(c)}
+            className={`h-6 w-6 rounded-md ${color === c ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
+            style={{ background: c }}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {ICONS.map((i) => (
+          <button
+            type="button"
+            key={i}
+            onClick={() => setIcon(i)}
+            className={`h-6 w-6 rounded-md grid place-items-center ${icon === i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+          >
+            <DynamicIcon name={i} className="h-3 w-3" />
+          </button>
+        ))}
+      </div>
+      <div className="flex justify-end gap-2 pt-0.5">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-1.5 rounded-lg text-xs hover:bg-muted"
+        >
+          {t("common.cancel")}
+        </button>
+        <button
+          type="submit"
+          className="px-3 py-1.5 rounded-lg text-xs gradient-primary text-primary-foreground"
+        >
+          {t("common.save")}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function NewCategoryCard({
   onCreate,
 }: {
@@ -242,7 +325,7 @@ function NewCategoryCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border-2 border-dashed border-border min-h-[320px] grid place-items-center p-6"
+      className="rounded-3xl border-2 border-dashed border-border min-h-72 sm:min-h-80 grid place-items-center p-6"
     >
       {!open ? (
         <button

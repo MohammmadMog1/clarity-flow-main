@@ -25,6 +25,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Local tooling
+.claude/
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

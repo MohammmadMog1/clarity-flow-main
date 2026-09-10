@@ -1,8 +1,21 @@
 import { createSlice, PayloadAction, nanoid } from "@reduxjs/toolkit";
-import type { Task, Subtask } from "./types";
+import type { Task, Subtask } from "@/redux/types";
+import { todayKey } from "@/lib/date";
 
 const now = () => new Date().toISOString();
-const today = () => new Date().toISOString().slice(0, 10);
+
+/** Single source of truth for how a task's completion follows its subtasks. */
+function deriveCompletion(task: Task) {
+  if (!task.subtasks.length) return;
+  const allDone = task.subtasks.every((s) => s.done);
+  if (allDone && !task.completed) {
+    task.completed = true;
+    task.completedAt = now();
+  } else if (!allDone && task.completed) {
+    task.completed = false;
+    task.completedAt = undefined;
+  }
+}
 
 interface State {
   items: Task[];
@@ -47,6 +60,7 @@ const slice = createSlice({
       t.completed = !t.completed;
       t.completedAt = t.completed ? now() : undefined;
       if (t.completed) t.subtasks.forEach((s) => (s.done = true));
+      else t.subtasks.forEach((s) => (s.done = false));
     },
     addSubtask(state, a: PayloadAction<{ taskId: string; title: string }>) {
       const t = state.items.find((t) => t.id === a.payload.taskId);
@@ -58,17 +72,14 @@ const slice = createSlice({
       const s = t.subtasks.find((s) => s.id === a.payload.subId);
       if (!s) return;
       s.done = !s.done;
-      if (t.subtasks.length && t.subtasks.every((s) => s.done)) {
-        t.completed = true;
-        t.completedAt = now();
-      } else if (t.completed && t.subtasks.some((s) => !s.done)) {
-        t.completed = false;
-        t.completedAt = undefined;
-      }
+      deriveCompletion(t);
     },
     deleteSubtask(state, a: PayloadAction<{ taskId: string; subId: string }>) {
       const t = state.items.find((t) => t.id === a.payload.taskId);
-      if (t) t.subtasks = t.subtasks.filter((s) => s.id !== a.payload.subId);
+      if (t) {
+        t.subtasks = t.subtasks.filter((s) => s.id !== a.payload.subId);
+        deriveCompletion(t);
+      }
     },
     setPlannedDate(state, a: PayloadAction<{ id: string; date?: string }>) {
       const t = state.items.find((t) => t.id === a.payload.id);
@@ -85,6 +96,12 @@ const slice = createSlice({
     hydrateTasks(state, a: PayloadAction<Task[]>) {
       state.items = a.payload ?? [];
     },
+    /** Used to roll a task back to a known-good snapshot after a failed write. */
+    setTaskLocal(state, a: PayloadAction<Task>) {
+      const i = state.items.findIndex((t) => t.id === a.payload.id);
+      if (i >= 0) state.items[i] = a.payload;
+      else state.items.push(a.payload);
+    },
   },
 });
 
@@ -100,5 +117,8 @@ export const {
   toggleFocus,
   reorder,
   hydrateTasks,
+  setTaskLocal,
 } = slice.actions;
 export default slice.reducer;
+
+export { todayKey };

@@ -11,8 +11,11 @@ interface State {
   language: Lang;
 }
 
-// Load initial state from localStorage
+// Load initial state from localStorage (client-side only — no-op during SSR)
 const loadFromStorage = () => {
+  if (typeof window === "undefined") {
+    return { theme: "light" as const, language: "en" as const };
+  }
   try {
     const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
     const language = (localStorage.getItem("language") as Lang) || "en";
@@ -36,11 +39,9 @@ const slice = createSlice({
   reducers: {
     setTheme(state, a: PayloadAction<"light" | "dark">) {
       state.theme = a.payload;
-      localStorage.setItem("theme", a.payload);
     },
     toggleTheme(state) {
       state.theme = state.theme === "dark" ? "light" : "dark";
-      localStorage.setItem("theme", state.theme);
     },
     toggleSidebar(state) {
       state.sidebarOpen = !state.sidebarOpen;
@@ -50,7 +51,6 @@ const slice = createSlice({
     },
     setLanguage(state, a: PayloadAction<Lang>) {
       state.language = a.payload;
-      localStorage.setItem("language", a.payload);
     },
     openQuickAdd(state, a: PayloadAction<string | undefined>) {
       state.quickAddOpen = true;

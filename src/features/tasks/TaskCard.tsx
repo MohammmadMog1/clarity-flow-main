@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Calendar, ChevronDown, ChevronRight, Clock, Flag, Plus, Star, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/redux/store";
 import {
   toggleTask,
@@ -9,10 +10,10 @@ import {
   toggleSubtask,
   deleteSubtask,
   toggleFocus,
-} from "@/redux/tasksSlice";
+} from "./tasksSlice";
 import type { Task, Priority, Difficulty } from "@/redux/types";
 import { taskProgress } from "@/redux/selectors";
-import { ProgressBar } from "./Progress";
+import { ProgressBar } from "@/components/Progress";
 import { format } from "date-fns";
 
 const priorityStyles: Record<Priority, string> = {
@@ -25,6 +26,7 @@ const difficultyDots: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3
 
 export function TaskCard({ task, accentColor }: { task: Task; accentColor?: string }) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [newSub, setNewSub] = useState("");
   const progress = taskProgress(task);
@@ -45,7 +47,7 @@ export function TaskCard({ task, accentColor }: { task: Task; accentColor?: stri
               ? "border-success bg-success text-success-foreground"
               : "border-border hover:border-primary"
           }`}
-          aria-label="Toggle complete"
+          aria-label={t("task.toggleComplete")}
         >
           {task.completed && (
             <motion.svg
@@ -72,7 +74,7 @@ export function TaskCard({ task, accentColor }: { task: Task; accentColor?: stri
             <button
               onClick={() => dispatch(toggleFocus(task.id))}
               className={`opacity-0 group-hover:opacity-100 transition ${task.focus ? "opacity-100 text-warning" : "text-muted-foreground"}`}
-              aria-label="Focus"
+              aria-label={t("task.toggleFocus")}
             >
               <Star className="h-4 w-4" fill={task.focus ? "currentColor" : "none"} />
             </button>
@@ -86,13 +88,13 @@ export function TaskCard({ task, accentColor }: { task: Task; accentColor?: stri
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium border ${priorityStyles[task.priority]}`}
             >
-              <Flag className="h-2.5 w-2.5" /> {task.priority}
+              <Flag className="h-2.5 w-2.5" /> {t(`task.priority_${task.priority}`)}
             </span>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-muted text-muted-foreground">
               {Array.from({ length: difficultyDots[task.difficulty] }).map((_, i) => (
                 <span key={i} className="h-1.5 w-1.5 rounded-full bg-foreground/60" />
               ))}
-              {task.difficulty}
+              {t(`task.difficulty_${task.difficulty}`)}
             </span>
             {task.estimatedMinutes > 0 && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-medium bg-muted text-muted-foreground">
@@ -113,8 +115,13 @@ export function TaskCard({ task, accentColor }: { task: Task; accentColor?: stri
                 onClick={() => setOpen(!open)}
                 className="mt-1.5 text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
               >
-                {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length} subtasks
+                {open ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3 rtl:rotate-180" />
+                )}
+                {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length}{" "}
+                {t("task.subtasks")}
               </button>
             </div>
           )}
@@ -161,7 +168,7 @@ export function TaskCard({ task, accentColor }: { task: Task; accentColor?: stri
                     <input
                       value={newSub}
                       onChange={(e) => setNewSub(e.target.value)}
-                      placeholder="Add subtask"
+                      placeholder={t("task.addSubtask")}
                       className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
                     />
                   </form>
@@ -174,7 +181,7 @@ export function TaskCard({ task, accentColor }: { task: Task; accentColor?: stri
         <button
           onClick={() => dispatch(deleteTask(task.id))}
           className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition"
-          aria-label="Delete task"
+          aria-label={t("task.deleteTask")}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>

@@ -20,8 +20,10 @@ import { format, subDays, startOfWeek, isAfter } from "date-fns";
 import { Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
-import { saveReview } from "@/redux/analyticsSlice";
+import { saveReview } from "@/features/analytics/analyticsSlice";
 import { ProgressRing } from "@/components/Progress";
+import { todayKey } from "@/lib/date";
+import type { DailyReview } from "@/redux/types";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -32,7 +34,6 @@ export const Route = createFileRoute("/analytics")({
         content: "Insights on your productivity, completion rates, streaks, and daily reflections.",
       },
       { property: "og:title", content: "Analytics — Clarity" },
-      { property: "og:description", content: "Insights on your productivity and reflections." },
     ],
   }),
   component: AnalyticsPage,
@@ -44,7 +45,7 @@ function AnalyticsPage() {
   const categories = useAppSelector((s) => s.categories.items);
   const reviews = useAppSelector((s) => s.analytics.reviews);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKey();
   const completedToday = tasks.filter((t) => t.completed && t.completedAt?.slice(0, 10) === today);
 
   const last14 = useMemo(() => {
@@ -76,8 +77,8 @@ function AnalyticsPage() {
     };
   });
 
-  const difficultyBreakdown = ["easy", "medium", "hard"].map((d) => ({
-    name: d.charAt(0).toUpperCase() + d.slice(1),
+  const difficultyBreakdown = (["easy", "medium", "hard"] as const).map((d) => ({
+    name: t(`task.difficulty_${d}`),
     completed: tasks.filter((t) => t.difficulty === d && t.completed).length,
     pending: tasks.filter((t) => t.difficulty === d && !t.completed).length,
   }));
@@ -133,7 +134,7 @@ function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 rounded-3xl glass shadow-soft p-5">
+        <div className="lg:col-span-2 rounded-3xl border border-border bg-card shadow-soft p-5">
           <h3 className="font-semibold mb-1">{t("analytics.last14")}</h3>
           <p className="text-xs text-muted-foreground mb-4">{t("analytics.dailyFlow")}</p>
           <div className="h-64">
@@ -167,7 +168,7 @@ function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl glass shadow-soft p-5">
+        <div className="rounded-3xl border border-border bg-card shadow-soft p-5">
           <h3 className="font-semibold mb-1">{t("analytics.byCategory")}</h3>
           <p className="text-xs text-muted-foreground mb-2">{t("analytics.completedShare")}</p>
           <div className="h-48">
@@ -209,7 +210,7 @@ function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 rounded-3xl glass shadow-soft p-5">
+        <div className="lg:col-span-2 rounded-3xl border border-border bg-card shadow-soft p-5">
           <h3 className="font-semibold mb-1">{t("analytics.byDifficulty")}</h3>
           <p className="text-xs text-muted-foreground mb-4">{t("analytics.easyHard")}</p>
           <div className="h-56">
@@ -238,7 +239,7 @@ function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl glass shadow-soft p-5 space-y-4">
+        <div className="rounded-3xl border border-border bg-card shadow-soft p-5 space-y-4">
           <div>
             <h3 className="font-semibold">{t("analytics.mostProductive")}</h3>
             <p className="text-2xl font-semibold text-gradient mt-2">{mostProductive}</p>
@@ -281,7 +282,7 @@ function BigStat({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-3xl p-5 shadow-soft ${accent ? "gradient-primary text-primary-foreground" : "glass"}`}
+      className={`rounded-3xl p-5 shadow-soft ${accent ? "gradient-primary text-primary-foreground" : "border border-border bg-card"}`}
     >
       <div
         className={`text-xs uppercase tracking-wider ${accent ? "opacity-80" : "text-muted-foreground"}`}
@@ -298,7 +299,7 @@ function BigStat({
 
 function DailyReviewCard() {
   const { t } = useTranslation();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKey();
   const tasks = useAppSelector((s) => s.tasks.items);
   const existing = useAppSelector((s) => s.analytics.reviews.find((r) => r.date === today));
   const dispatch = useAppDispatch();
@@ -309,7 +310,7 @@ function DailyReviewCard() {
   const completed = tasks.filter((t) => t.completed && t.completedAt?.slice(0, 10) === today);
 
   return (
-    <div className="rounded-3xl glass shadow-soft p-6">
+    <div className="rounded-3xl border border-border bg-card shadow-soft p-6">
       <div className="flex items-baseline justify-between">
         <div>
           <h3 className="font-semibold text-lg">{t("analytics.dailyReview")}</h3>
@@ -376,7 +377,7 @@ function DailyReviewCard() {
             {completed.map((t) => (
               <div
                 key={t.id}
-                className="text-sm p-2.5 rounded-lg bg-card/60 border border-border line-through opacity-70"
+                className="text-sm p-2.5 rounded-lg bg-muted/40 border border-border line-through opacity-70"
               >
                 {t.title}
               </div>
@@ -412,18 +413,18 @@ function Stars({
   );
 }
 
-function ReviewHistory({ reviews }: { reviews: any[] }) {
+function ReviewHistory({ reviews }: { reviews: DailyReview[] }) {
   const { t } = useTranslation();
   if (!reviews.length) return null;
   const sorted = [...reviews].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7);
   return (
-    <div className="rounded-3xl glass shadow-soft p-5">
+    <div className="rounded-3xl border border-border bg-card shadow-soft p-5">
       <h3 className="font-semibold mb-4">{t("analytics.recentReflections")}</h3>
       <div className="space-y-3">
         {sorted.map((r) => (
           <div
             key={r.date}
-            className="flex items-start gap-4 p-3 rounded-xl bg-card/60 border border-border"
+            className="flex items-start gap-4 p-3 rounded-xl bg-muted/40 border border-border"
           >
             <div className="text-xs text-muted-foreground w-20 shrink-0">
               {format(new Date(r.date), "MMM d")}

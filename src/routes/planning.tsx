@@ -1,18 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Target, TrendingUp, Plus, X, ListChecks, Flame, Clock } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Target, TrendingUp, Plus, X, ListChecks, Flame, Clock, Check } from "lucide-react";
+import { useState } from "react";
 import { addDays, format, startOfWeek } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
-import { setPlannedDate, toggleTask, toggleFocus } from "@/redux/tasksSlice";
+import { setPlannedDate, toggleTask, toggleFocus } from "@/features/tasks/tasksSlice";
 import {
   addMonthlyGoal,
   deleteMonthlyGoal,
   setWeeklyGoal,
   updateMonthlyGoal,
-} from "@/redux/planningSlice";
+} from "@/features/planning/planningSlice";
 import { ProgressRing, ProgressBar } from "@/components/Progress";
+import { todayKey, currentMonthKey } from "@/lib/date";
 
 export const Route = createFileRoute("/planning")({
   head: () => ({
@@ -20,10 +21,9 @@ export const Route = createFileRoute("/planning")({
       { title: "Planning — Clarity" },
       {
         name: "description",
-        content: "Plan your day, week, and month with focus, intention, and clarity.",
+        content: "Pick what matters today, this week, this month — then go do it.",
       },
       { property: "og:title", content: "Planning — Clarity" },
-      { property: "og:description", content: "Plan your day, week, and month with intention." },
     ],
   }),
   component: PlanningPage,
@@ -75,7 +75,7 @@ function PlanningPage() {
 }
 
 function DailyPlan() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKey();
   const all = useAppSelector((s) => s.tasks.items);
   const categories = useAppSelector((s) => s.categories.items);
   const dispatch = useAppDispatch();
@@ -106,7 +106,7 @@ function DailyPlan() {
           />
         </div>
 
-        <div className="rounded-3xl glass shadow-soft p-5">
+        <div className="rounded-3xl border border-border bg-card shadow-soft p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">{t("plan.todaysPlan")}</h3>
             <div className="text-xs text-muted-foreground">{format(new Date(), "EEEE, MMM d")}</div>
@@ -119,30 +119,36 @@ function DailyPlan() {
                 <motion.div
                   layout
                   key={task.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl bg-card/60 border border-border ${task.completed ? "opacity-60" : ""}`}
+                  className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 p-3 rounded-xl bg-card border border-border ${task.completed ? "opacity-60" : ""}`}
                 >
                   <button
                     onClick={() => dispatch(toggleTask(task.id))}
-                    className={`h-5 w-5 rounded-md border-2 grid place-items-center ${task.completed ? "bg-success border-success text-success-foreground" : "border-border"}`}
+                    className={`h-5 w-5 rounded-md border-2 grid place-items-center shrink-0 ${task.completed ? "bg-success border-success text-success-foreground" : "border-border"}`}
+                    aria-label={t("task.toggleComplete")}
                   >
-                    {task.completed && <span className="text-[10px]">✓</span>}
+                    {task.completed && <Check className="h-3 w-3" strokeWidth={3} />}
                   </button>
-                  <span className="h-2 w-2 rounded-full" style={{ background: cat?.color }} />
-                  <span className={`flex-1 text-sm ${task.completed ? "line-through" : ""}`}>
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ background: cat?.color }}
+                  />
+                  <span
+                    className={`flex-1 min-w-[8rem] text-sm ${task.completed ? "line-through" : ""}`}
+                  >
                     {task.title}
                   </span>
                   <button
                     onClick={() => dispatch(toggleFocus(task.id))}
-                    className={`text-xs px-2 py-0.5 rounded-md ${task.focus ? "bg-warning/20 text-warning-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                    className={`text-xs px-2 py-0.5 rounded-md shrink-0 ${task.focus ? "bg-warning/20 text-warning-foreground" : "text-muted-foreground hover:bg-muted"}`}
                   >
                     {task.focus ? t("plan.focusBadge") : t("plan.setFocus")}
                   </button>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[11px] text-muted-foreground shrink-0">
                     {task.estimatedMinutes}m
                   </span>
                   <button
                     onClick={() => dispatch(setPlannedDate({ id: task.id, date: undefined }))}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive shrink-0"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -154,7 +160,7 @@ function DailyPlan() {
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-3xl glass shadow-soft p-5 text-center">
+        <div className="rounded-3xl border border-border bg-card shadow-soft p-5 text-center">
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
             {t("plan.todaysProgress")}
           </div>
@@ -164,7 +170,7 @@ function DailyPlan() {
           </div>
         </div>
 
-        <div className="rounded-3xl glass shadow-soft p-5">
+        <div className="rounded-3xl border border-border bg-card shadow-soft p-5">
           <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <Plus className="h-4 w-4" /> {t("plan.addToToday")}
           </h3>
@@ -178,9 +184,12 @@ function DailyPlan() {
                   onClick={() => dispatch(setPlannedDate({ id: task.id, date: today }))}
                   className="w-full text-start p-2.5 rounded-xl hover:bg-muted/60 flex items-center gap-2 group"
                 >
-                  <span className="h-2 w-2 rounded-full" style={{ background: cat?.color }} />
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ background: cat?.color }}
+                  />
                   <span className="text-sm flex-1 truncate">{task.title}</span>
-                  <Plus className="h-4 w-4 opacity-0 group-hover:opacity-100 text-primary" />
+                  <Plus className="h-4 w-4 opacity-0 group-hover:opacity-100 text-primary shrink-0" />
                 </button>
               );
             })}
@@ -211,8 +220,8 @@ function WeeklyPlan() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 rounded-3xl glass shadow-soft p-5 flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl gradient-primary grid place-items-center text-primary-foreground">
+        <div className="lg:col-span-2 rounded-3xl border border-border bg-card shadow-soft p-5 flex items-center gap-4">
+          <div className="h-12 w-12 rounded-xl gradient-primary grid place-items-center text-primary-foreground shrink-0">
             <Target className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
@@ -235,7 +244,7 @@ function WeeklyPlan() {
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="text-xs text-primary hover:underline"
+              className="text-xs text-primary hover:underline shrink-0"
             >
               {t("common.edit")}
             </button>
@@ -245,13 +254,13 @@ function WeeklyPlan() {
                 dispatch(setWeeklyGoal(draft));
                 setEditing(false);
               }}
-              className="text-xs px-3 py-1.5 rounded-lg gradient-primary text-primary-foreground"
+              className="text-xs px-3 py-1.5 rounded-lg gradient-primary text-primary-foreground shrink-0"
             >
               {t("common.save")}
             </button>
           )}
         </div>
-        <div className="rounded-3xl glass shadow-soft p-5 flex items-center gap-4">
+        <div className="rounded-3xl border border-border bg-card shadow-soft p-5 flex items-center gap-4">
           <ProgressRing value={weekProgress} size={64} stroke={6} />
           <div>
             <div className="text-2xl font-semibold">
@@ -262,15 +271,15 @@ function WeeklyPlan() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {days.map((d) => {
           const key = format(d, "yyyy-MM-dd");
           const dayTasks = tasks.filter((t) => t.plannedDate === key);
-          const isToday = key === new Date().toISOString().slice(0, 10);
+          const isToday = key === todayKey();
           return (
             <div
               key={key}
-              className={`rounded-2xl p-3 min-h-[180px] glass shadow-soft ${isToday ? "ring-2 ring-primary" : ""}`}
+              className={`rounded-2xl p-3 min-h-44 border border-border bg-card shadow-soft ${isToday ? "ring-2 ring-primary" : ""}`}
             >
               <div className="flex items-baseline justify-between mb-2">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -284,7 +293,7 @@ function WeeklyPlan() {
                   return (
                     <div
                       key={t.id}
-                      className={`text-xs p-2 rounded-lg bg-card border border-border ${t.completed ? "opacity-50 line-through" : ""}`}
+                      className={`text-xs p-2 rounded-lg bg-muted/40 border border-border ${t.completed ? "opacity-50 line-through" : ""}`}
                     >
                       <div className="flex items-center gap-1.5">
                         <span
@@ -309,7 +318,7 @@ function WeeklyPlan() {
 }
 
 function MonthlyPlan() {
-  const month = new Date().toISOString().slice(0, 7);
+  const month = currentMonthKey();
   const goals = useAppSelector((s) => s.planning.monthlyGoals).filter((g) => g.month === month);
   const categories = useAppSelector((s) => s.categories.items);
   const dispatch = useAppDispatch();
@@ -323,7 +332,7 @@ function MonthlyPlan() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl glass shadow-soft p-6 flex flex-col md:flex-row gap-6 items-center">
+      <div className="rounded-3xl border border-border bg-card shadow-soft p-6 flex flex-col md:flex-row gap-6 items-center">
         <ProgressRing value={overall} size={120} stroke={10} />
         <div className="flex-1">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -342,7 +351,7 @@ function MonthlyPlan() {
           setTitle("");
           setCategoryId(undefined);
         }}
-        className="rounded-3xl glass shadow-soft p-4 flex flex-col sm:flex-row gap-2"
+        className="rounded-3xl border border-border bg-card shadow-soft p-4 flex flex-col sm:flex-row gap-2"
       >
         <input
           value={title}
@@ -364,7 +373,7 @@ function MonthlyPlan() {
         </select>
         <button
           type="submit"
-          className="px-4 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5"
+          className="px-4 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-1.5"
         >
           <Plus className="h-4 w-4" /> {t("common.add")}
         </button>
@@ -374,7 +383,11 @@ function MonthlyPlan() {
         {goals.map((g) => {
           const cat = categories.find((c) => c.id === g.categoryId);
           return (
-            <motion.div layout key={g.id} className="rounded-2xl glass shadow-soft p-5">
+            <motion.div
+              layout
+              key={g.id}
+              className="rounded-2xl border border-border bg-card shadow-soft p-5"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium">{g.title}</div>
@@ -387,7 +400,7 @@ function MonthlyPlan() {
                 </div>
                 <button
                   onClick={() => dispatch(deleteMonthlyGoal(g.id))}
-                  className="text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive shrink-0"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -428,7 +441,19 @@ function MonthlyPlan() {
   );
 }
 
-function Metric({ icon: Icon, label, value, accent = "primary", suffix = "" }: any) {
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  accent = "primary",
+  suffix = "",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  accent?: "primary" | "warning" | "info" | "success";
+  suffix?: string;
+}) {
   const colorMap: Record<string, string> = {
     primary: "var(--primary)",
     warning: "var(--warning)",
@@ -437,14 +462,14 @@ function Metric({ icon: Icon, label, value, accent = "primary", suffix = "" }: a
   };
   const color = colorMap[accent];
   return (
-    <div className="rounded-2xl glass shadow-soft p-4 flex items-center gap-3">
+    <div className="rounded-2xl border border-border bg-card shadow-soft p-4 flex items-center gap-3">
       <div
-        className="h-10 w-10 rounded-xl grid place-items-center"
+        className="h-10 w-10 rounded-xl grid place-items-center shrink-0"
         style={{ background: `color-mix(in oklab, ${color} 18%, transparent)`, color }}
       >
         <Icon className="h-5 w-5" />
       </div>
-      <div>
+      <div className="min-w-0">
         <div className="text-xl font-semibold leading-none">
           {value}
           {suffix}
