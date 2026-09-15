@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { usePageTour, type TourStep } from "@/components/onboarding/Tour";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -85,12 +86,38 @@ export default function AnnouncementsPage() {
 
   const announcements = announcementsQuery.data ?? [];
 
+  const tourSteps = useMemo<TourStep[]>(
+    () => [
+      {
+        target: '[data-tour="admin-tabs"]',
+        title: t("tour.adminAnnouncements.tabsTitle"),
+        content: t("tour.adminAnnouncements.tabsContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="announcement-form"]',
+        title: t("tour.adminAnnouncements.formTitle"),
+        content: t("tour.adminAnnouncements.formContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="announcement-list"]',
+        title: t("tour.adminAnnouncements.listTitle"),
+        content: t("tour.adminAnnouncements.listContent"),
+        placement: "top",
+      },
+    ],
+    [t],
+  );
+  usePageTour("admin-announcements", tourSteps);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <p className="text-sm text-muted-foreground">{t("admin.announcementsDesc")}</p>
 
         <form
+          data-tour="announcement-form"
           onSubmit={(e) => {
             e.preventDefault();
             if (!title.trim() || !body.trim()) return;
@@ -130,7 +157,7 @@ export default function AnnouncementsPage() {
           </div>
         </form>
 
-        <div className="space-y-3">
+        <div data-tour="announcement-list" className="space-y-3">
           {announcements.map((a) => (
             <div
               key={a.id}

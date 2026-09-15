@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, TrendingUp, Plus, X, ListChecks, Flame, Clock, Check } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { addDays, format, startOfWeek } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
@@ -13,6 +13,7 @@ import {
   updateMonthlyGoal,
 } from "@/features/planning/planningSlice";
 import { ProgressRing, ProgressBar } from "@/components/Progress";
+import { usePageTour, type TourStep } from "@/components/onboarding/Tour";
 import { todayKey, currentMonthKey } from "@/lib/date";
 
 export const Route = createFileRoute("/planning")({
@@ -32,6 +33,38 @@ export const Route = createFileRoute("/planning")({
 function PlanningPage() {
   const [tab, setTab] = useState<"day" | "week" | "month">("day");
   const { t } = useTranslation();
+
+  const tourSteps = useMemo<TourStep[]>(
+    () => [
+      {
+        target: '[data-tour="plan-tabs"]',
+        title: t("tour.planning.tabsTitle"),
+        content: t("tour.planning.tabsContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="plan-metrics"]',
+        title: t("tour.planning.metricsTitle"),
+        content: t("tour.planning.metricsContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="plan-today"]',
+        title: t("tour.planning.todayTitle"),
+        content: t("tour.planning.todayContent"),
+        placement: "right",
+      },
+      {
+        target: '[data-tour="plan-inbox"]',
+        title: t("tour.planning.inboxTitle"),
+        content: t("tour.planning.inboxContent"),
+        placement: "left",
+      },
+    ],
+    [t],
+  );
+  usePageTour("planning", tourSteps);
+
   return (
     <div className="space-y-8 max-w-[1500px] mx-auto">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -39,7 +72,10 @@ function PlanningPage() {
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{t("plan.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1.5">{t("plan.subtitle")}</p>
         </div>
-        <div className="inline-flex p-1 rounded-2xl bg-muted/60 border border-border">
+        <div
+          data-tour="plan-tabs"
+          className="inline-flex p-1 rounded-2xl bg-muted/60 border border-border"
+        >
           {(["day", "week", "month"] as const).map((tabKey) => (
             <button
               key={tabKey}
@@ -93,7 +129,7 @@ function DailyPlan() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div data-tour="plan-metrics" className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Metric icon={ListChecks} label={t("plan.todaysTasks")} value={todays.length} />
           <Metric icon={Flame} label={t("plan.focus")} value={focus.length} accent="warning" />
           <Metric icon={Clock} label={t("plan.estMinutes")} value={totalEst} accent="info" />
@@ -106,7 +142,10 @@ function DailyPlan() {
           />
         </div>
 
-        <div className="rounded-3xl border border-border bg-card shadow-soft p-5">
+        <div
+          data-tour="plan-today"
+          className="rounded-3xl border border-border bg-card shadow-soft p-5"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">{t("plan.todaysPlan")}</h3>
             <div className="text-xs text-muted-foreground">{format(new Date(), "EEEE, MMM d")}</div>
@@ -170,7 +209,10 @@ function DailyPlan() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border bg-card shadow-soft p-5">
+        <div
+          data-tour="plan-inbox"
+          className="rounded-3xl border border-border bg-card shadow-soft p-5"
+        >
           <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <Plus className="h-4 w-4" /> {t("plan.addToToday")}
           </h3>

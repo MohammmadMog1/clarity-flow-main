@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ShieldCheck, ShieldOff, UserCog } from "lucide-react";
+import { usePageTour, type TourStep } from "@/components/onboarding/Tour";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,12 +58,38 @@ export default function UsersPage() {
     (u) => !q || u.email.toLowerCase().includes(q) || u.display_name?.toLowerCase().includes(q),
   );
 
+  const tourSteps = useMemo<TourStep[]>(
+    () => [
+      {
+        target: '[data-tour="admin-tabs"]',
+        title: t("tour.adminUsers.tabsTitle"),
+        content: t("tour.adminUsers.tabsContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="admin-search"]',
+        title: t("tour.adminUsers.searchTitle"),
+        content: t("tour.adminUsers.searchContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="admin-table"]',
+        title: t("tour.adminUsers.tableTitle"),
+        content: t("tour.adminUsers.tableContent"),
+        placement: "top",
+      },
+    ],
+    [t],
+  );
+  usePageTour("admin-users", tourSteps);
+
   return (
     <AdminLayout>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">{t("admin.usersDesc")}</p>
           <Input
+            data-tour="admin-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("admin.searchUsers")}
@@ -70,7 +97,7 @@ export default function UsersPage() {
           />
         </div>
 
-        <div className="rounded-2xl border border-border overflow-hidden">
+        <div data-tour="admin-table" className="rounded-2xl border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

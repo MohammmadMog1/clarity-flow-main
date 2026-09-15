@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { TourProvider } from "@/components/onboarding/Tour";
 import { QuickAddDialog } from "@/features/tasks/QuickAddDialog";
 import { useDataSync } from "@/hooks/useDataSync";
 import { useAuth } from "./AuthProvider";
@@ -45,9 +46,9 @@ export function AppGate({ children }: { children: React.ReactNode }) {
   if (status === "suspended") return <SuspendedScreen />;
 
   return (
-    <>
+    <TourProvider>
       <AppShell>{children}</AppShell>
       <QuickAddDialog />
-    </>
+    </TourProvider>
   );
 }

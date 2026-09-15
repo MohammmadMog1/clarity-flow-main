@@ -10,11 +10,13 @@ import {
   Plus,
   Languages,
   LogOut,
+  HelpCircle,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { openQuickAdd, setLanguage, toggleTheme } from "@/redux/uiSlice";
+import { useTourControls } from "@/components/onboarding/Tour";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -35,6 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const { t } = useTranslation();
   const { profile, isAdmin, signOut } = useAuth();
+  const { startTour, hasTour } = useTourControls();
 
   const nav = [
     { to: "/" as const, label: t("nav.brain"), icon: LayoutGrid },
@@ -60,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-semibold hidden sm:inline">Clarity</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 ms-6">
+          <nav data-tour="nav-links" className="hidden md:flex items-center gap-1 ms-6">
             {nav.map((item) => {
               const active = item.to === "/" ? path === "/" : path.startsWith(item.to);
               const Icon = item.icon;
@@ -83,6 +86,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-1 ms-auto">
             <NotificationBell />
+            {hasTour && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                onClick={() => startTour()}
+                title={t("tour.restart")}
+              >
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -149,6 +163,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* FAB */}
         <motion.button
+          data-tour="app-fab"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => dispatch(openQuickAdd(undefined))}

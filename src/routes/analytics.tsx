@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { saveReview } from "@/features/analytics/analyticsSlice";
 import { ProgressRing } from "@/components/Progress";
+import { usePageTour, type TourStep } from "@/components/onboarding/Tour";
 import { todayKey } from "@/lib/date";
 import type { DailyReview } from "@/redux/types";
 
@@ -108,6 +109,31 @@ function AnalyticsPage() {
     return best ? best[0] : "—";
   }, [tasks]);
 
+  const tourSteps = useMemo<TourStep[]>(
+    () => [
+      {
+        target: '[data-tour="analytics-stats"]',
+        title: t("tour.analytics.statsTitle"),
+        content: t("tour.analytics.statsContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="analytics-charts"]',
+        title: t("tour.analytics.chartsTitle"),
+        content: t("tour.analytics.chartsContent"),
+        placement: "top",
+      },
+      {
+        target: '[data-tour="analytics-review"]',
+        title: t("tour.analytics.reviewTitle"),
+        content: t("tour.analytics.reviewContent"),
+        placement: "top",
+      },
+    ],
+    [t],
+  );
+  usePageTour("analytics", tourSteps);
+
   return (
     <div className="space-y-8 max-w-[1500px] mx-auto">
       <header>
@@ -117,7 +143,7 @@ function AnalyticsPage() {
         <p className="text-sm text-muted-foreground mt-1.5">{t("analytics.subtitle")}</p>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div data-tour="analytics-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <BigStat
           label={t("analytics.doneToday")}
           value={completedToday.length}
@@ -133,7 +159,7 @@ function AnalyticsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div data-tour="analytics-charts" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-3xl border border-border bg-card shadow-soft p-5">
           <h3 className="font-semibold mb-1">{t("analytics.last14")}</h3>
           <p className="text-xs text-muted-foreground mb-4">{t("analytics.dailyFlow")}</p>
@@ -310,7 +336,10 @@ function DailyReviewCard() {
   const completed = tasks.filter((t) => t.completed && t.completedAt?.slice(0, 10) === today);
 
   return (
-    <div className="rounded-3xl border border-border bg-card shadow-soft p-6">
+    <div
+      data-tour="analytics-review"
+      className="rounded-3xl border border-border bg-card shadow-soft p-6"
+    >
       <div className="flex items-baseline justify-between">
         <div>
           <h3 className="font-semibold text-lg">{t("analytics.dailyReview")}</h3>

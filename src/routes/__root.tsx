@@ -65,7 +65,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#c2632c" },
+      { name: "theme-color", content: "#3a6ea5" },
       { title: "Clarity — Plan with intention" },
       {
         name: "description",

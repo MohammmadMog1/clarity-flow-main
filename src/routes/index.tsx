@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { selectFilteredTasks, categoryStats } from "@/redux/selectors";
@@ -10,6 +10,7 @@ import { openQuickAdd } from "@/redux/uiSlice";
 import { TaskCard } from "@/features/tasks/TaskCard";
 import { ProgressRing } from "@/components/Progress";
 import { DynamicIcon } from "@/components/DynamicIcon";
+import { usePageTour, type TourStep } from "@/components/onboarding/Tour";
 import type { Category } from "@/redux/types";
 
 export const Route = createFileRoute("/")({
@@ -51,15 +52,57 @@ function BrainDumpPage() {
   const categories = useAppSelector((s) => s.categories.items);
   const tasks = useAppSelector(selectFilteredTasks);
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
 
   const totalCompleted = tasks.filter((t) => t.completed).length;
   const overallProgress = tasks.length ? Math.round((totalCompleted / tasks.length) * 100) : 0;
+
+  const tourSteps = useMemo<TourStep[]>(
+    () => [
+      { title: t("tour.brainDump.welcomeTitle"), content: t("tour.brainDump.welcomeContent") },
+      {
+        target: '[data-tour="nav-links"]',
+        title: t("tour.brainDump.navTitle"),
+        content: t("tour.brainDump.navContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="app-fab"]',
+        title: t("tour.brainDump.fabTitle"),
+        content: t("tour.brainDump.fabContent"),
+        placement: "left",
+      },
+      {
+        target: '[data-tour="brain-hero"]',
+        title: t("tour.brainDump.heroTitle"),
+        content: t("tour.brainDump.heroContent"),
+        placement: "bottom",
+      },
+      {
+        target: '[data-tour="brain-categories"]',
+        title: t("tour.brainDump.categoriesTitle"),
+        content: t("tour.brainDump.categoriesContent"),
+        placement: "top",
+      },
+      {
+        target: '[data-tour="brain-new-category"]',
+        title: t("tour.brainDump.newCategoryTitle"),
+        content: t("tour.brainDump.newCategoryContent"),
+        placement: "top",
+      },
+    ],
+    [t],
+  );
+  usePageTour("brain-dump", tourSteps);
 
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto">
       <Hero progress={overallProgress} total={tasks.length} done={totalCompleted} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div
+        data-tour="brain-categories"
+        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
+      >
         {categories.map((c, i) => (
           <CategoryColumn key={c.id} category={c} index={i} />
         ))}
@@ -94,6 +137,7 @@ function Hero({ progress, total, done }: { progress: number; total: number; done
 
   return (
     <motion.div
+      data-tour="brain-hero"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-3xl p-7 md:p-9 border border-border bg-card shadow-card"
@@ -323,6 +367,7 @@ function NewCategoryCard({
 
   return (
     <motion.div
+      data-tour="brain-new-category"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-3xl border-2 border-dashed border-border min-h-72 sm:min-h-80 grid place-items-center p-6"

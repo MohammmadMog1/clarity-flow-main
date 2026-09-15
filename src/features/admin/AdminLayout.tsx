@@ -25,7 +25,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       <header>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{t("admin.title")}</h1>
       </header>
-      <div className="inline-flex p-1 rounded-2xl bg-muted/60 border border-border">
+      <div
+        data-tour="admin-tabs"
+        className="inline-flex p-1 rounded-2xl bg-muted/60 border border-border"
+      >
         {tabs.map((tab) => (
           <Link
             key={tab.to}
